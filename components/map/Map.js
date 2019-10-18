@@ -16,7 +16,7 @@ const routeLayer = {
     source: 'route',
     type: 'line',
     paint: {
-        'line-width': 1,
+        'line-width': 0.5,
         'line-color': '#007cbf'
     }
 }
@@ -55,6 +55,7 @@ export default class Map extends Component {
                 this.setState({
                     pointData: {
                         type: 'Point',
+                        properties: this._calculateTurf(),
                         coordinates: this.state.routeData.features[0].geometry.coordinates[counter++]
                     }
                 });
@@ -63,6 +64,7 @@ export default class Map extends Component {
             this.setState({
                 pointData: {
                     type: 'Point',
+                    properties: {},
                     coordinates: [originLongitude, originLatitude]
                 }
             });
@@ -70,12 +72,24 @@ export default class Map extends Component {
         this.animation = window.requestAnimationFrame(this._animatePoint);
     };
 
+    _calculateTurf(){
+        var existingPoint = this.state.routeData.features[0].geometry.coordinates[counter];
+        var toPoint = this.state.routeData.features[0].geometry.coordinates[counter + 1];
+        if(existingPoint && toPoint){
+            return turf.bearing(
+                turf.point(existingPoint),
+                turf.point(toPoint)
+            );
+        }
+        else return {};
+    }
+
     _updatePoint = () => {
         counter = 0;
         let fromLatitude = originLatitude;
-        originLatitude += factor;
         let toLatitude = originLatitude + factor;
         this._getDistance(originLongitude, fromLatitude, toLatitude);
+        originLatitude += factor;
     }
 
     _getDistance = (originLongitude, fromLatitude, toLatitude) => {
@@ -120,13 +134,12 @@ export default class Map extends Component {
 
     render() {
         const { viewport, pointData, routeData } = this.state;
-
         return (
             <div>
                 <MapGL
                     {...viewport}
-                    width="1200px"
-                    height="750px"
+                    width="1000px"
+                    height="550px"
                     mapboxApiAccessToken={this.TOKEN}
                     onViewportChange={this._onViewportChange}
                 >
@@ -141,10 +154,13 @@ export default class Map extends Component {
                             <Layer {...routeLayer} />
                         </Source>
                     )}
-                </MapGL>
-                <button onClick={this._updatePoint}>Click</button>
+                </MapGL><br/>
+                <button onClick={this._updatePoint}>Click</button><br/>
+                <div>
+                    <span>From {originLongitude}</span> &nbsp; &nbsp; 
+                    <span>To {originLatitude}</span>
+                </div>
             </div>
-
         );
     }
 }
